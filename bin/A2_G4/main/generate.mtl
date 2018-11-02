@@ -96,33 +96,33 @@ actor [actor.name/] {
 [/template]
 
 [template public featureNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
-	feature [element.name/] {
+	feature [element.name/] [if (not hasNoContent(element,aGRLspec,aURNdef))]{[/if]
 	[getConnection(element, aURNdef, aGRLspec,actor)/]
-}
+[if (not hasNoContent(element,aGRLspec,aURNdef))]}[/if]
 [/template]
 
 [template public goalNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
-	goal [element.name/] {
+	goal [element.name/] [if (not hasNoContent(element,aGRLspec,aURNdef))]{[/if]
 	[getConnection(element, aURNdef, aGRLspec,actor)/]
-}
+[if (not hasNoContent(element,aGRLspec,aURNdef))]}[/if]
 [/template]
 
 [template public taskNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
-	task [element.name/] {
+	task [element.name/] [if (not hasNoContent(element,aGRLspec,aURNdef))]{[/if]
 	[getConnection(element, aURNdef, aGRLspec,actor)/]
-}
+[if (not hasNoContent(element,aGRLspec,aURNdef))]}[/if]
 [/template]
 
 [template public resourceNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
-	resource [element.name/] {
+	resource [element.name/] [if (not hasNoContent(element,aGRLspec,aURNdef))]{[/if]
 	[getConnection(element, aURNdef, aGRLspec,actor)/]
-}
+[if (not hasNoContent(element,aGRLspec,aURNdef))]}[/if]
 [/template]
 
 [template public softGoalNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
-	softgoal [element.name/] {
+	softgoal [element.name/] [if (not hasNoContent(element,aGRLspec,aURNdef))]{[/if]
 	[getConnection(element, aURNdef, aGRLspec,actor)/]
-}
+[if (not hasNoContent(element,aGRLspec,aURNdef))]}[/if]
 [/template]
 
 [template public getConnection(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
@@ -173,3 +173,8 @@ importance [element.importanceQuantitative/]
 		[for (actorRef : IURNContainerRef | (aURNdef.specDiagrams.contRefs->select(i|i.oclIsTypeOf(ActorRef)))->select(j|j.nodes->includes(r)))]
 [for (a : Actor | aGRLspec.actors->select(i|i.contRefs->includes(actorRef)))][if (actor<>a)][a.name/].[/if][element.name/][/for][/for][/for]
 [/template]
+
+[query public hasNoContent(element : IntentionalElement, aGRLspec : GRLspec, aURNdef : URNdefinition) : Boolean = 
+element.decompositionType.toString()<>'Or' and element.decompositionType.toString()<>'Xor' and element.importanceQuantitative=0 and aGRLspec.links->select(i|i.oclIsTypeOf(Decomposition))->union(aGRLspec.links->select(j|j.oclIsTypeOf(Contribution)))->intersection(element.linksSrc)->isEmpty()
+and not aURNdef.specDiagrams.connections->select(i|i.oclIsTypeOf(BeliefLink))->exists(j|(element.refs->includes(j.target)))
+/]
