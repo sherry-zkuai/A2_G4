@@ -1,0 +1,175 @@
+[comment encoding = UTF-8 /]
+[**
+ * The documentation of the module generate.
+ */]
+[module generate('http:///ucm.ecore', 'http:///urn.ecore', 'http:///ucmscenarios.ecore', 'http:///grl.ecore', 'http:///urncore.ecore', 'http:///fm.ecore', 'http:///asd.ecore')]
+
+
+[**
+ * The documentation of the template generateElement.
+ * @param anURNspec
+ */]
+[template public generateElement(anURNspec : URNspec)]
+[comment @main/]
+	[file ('output.txt', false, 'UTF-8')]
+[getGRLspec(anURNspec.grlspec,anURNspec.urndef)/]
+	[/file]
+[/template]
+
+[template public getGRLspec(aGRLspec : GRLspec, aURNdef : URNdefinition) post (trim())]
+	[for (e : IntentionalElement | aGRLspec.intElements)]
+		[if (e.linksSrc->isEmpty() and e.oclIsTypeOf(Feature))]
+[root(e,aGRLspec)/]
+		[/if]
+	[/for]
+	[for (a : Actor | aGRLspec.actors)]
+[actor(a,aGRLspec,aURNdef)/]
+	[/for]
+[/template]
+
+[template public root(element : IntentionalElement, aGRLspec : GRLspec) post (trim())]
+features [element.name/] {
+	[getFeatures(element, aGRLspec)/]
+}
+[/template]
+
+[template public getFeatures(element : IntentionalElement, aGRLspec : GRLspec) post (trim())]
+[if (not element.linksDest->isEmpty())]
+	[for (link : ElementLink | element.linksDest)]
+		[if (link.oclIsTypeOf(MandatoryFMLink))]
+[mandatoryFeature(link.src.oclAsType(IntentionalElement), link, aGRLspec)/]
+		[elseif (link.oclIsTypeOf(OptionalFMLink))]
+[optionalFeature(link.src.oclAsType(IntentionalElement), link, aGRLspec)/]
+		[elseif (link.oclIsTypeOf(Decomposition))]
+[decomposeFeature(link.src.oclAsType(IntentionalElement), link, aGRLspec)/]
+		[/if]
+	[/for]
+[/if]
+
+[/template]
+
+[template public mandatoryFeature(element : IntentionalElement, link : ElementLink, aGRLspec : GRLspec) post (trim())]
+	mandatory [element.name/][if (element.decompositionType.toString()='Or')] OR[elseif (element.decompositionType.toString()='Xor')] XOR[/if] [if (not element.linksDest->isEmpty())]{
+	[getFeatures(element, aGRLspec)/]
+}
+[/if]
+[/template]
+
+[template public optionalFeature(element : IntentionalElement, link : ElementLink, aGRLspec : GRLspec) post (trim())]
+	optional [element.name/][if (element.decompositionType.toString()='Or')] OR[elseif (element.decompositionType.toString()='Xor')] XOR[/if] [if (not element.linksDest->isEmpty())]{
+	[getFeatures(element, aGRLspec)/]
+}
+[/if]
+[/template]
+
+[template public decomposeFeature(element : IntentionalElement, link : ElementLink, aGRLspec : GRLspec) post (trim())]
+	[element.name/][if (element.decompositionType.toString()='Or')] OR[elseif (element.decompositionType.toString()='Xor')] XOR[/if] [if (not element.linksDest->isEmpty())]{
+	[getFeatures(element, aGRLspec)/]
+}
+[/if]
+[/template]
+
+[template public actor(actor : Actor, aGRLspec : GRLspec, aURNdef : URNdefinition) post (trim())]
+actor [actor.name/] {
+	[for (node : IURNNode | actor.contRefs.nodes)]
+	[if (node.oclIsTypeOf(IntentionalElementRef))]
+	[getActorNodes(node,aGRLspec,aURNdef,actor)/]
+	[/if]
+	[/for]
+}
+[/template]
+
+[template public getActorNodes(node : IURNNode, aGRLspec : GRLspec, aURNdef : URNdefinition, actor : Actor) post (trim())]
+	[for (e : IntentionalElement | aGRLspec.intElements->select(i|(i.refs->includes(node))))]
+		[if (e.oclIsTypeOf(Feature))]
+[featureNode(e, aURNdef,aGRLspec,actor)/]
+		[elseif (e.type.toString()='Goal')]
+[goalNode(e, aURNdef,aGRLspec,actor)/]
+		[elseif (e.type.toString()='Task')]
+[taskNode(e, aURNdef,aGRLspec,actor)/]			
+		[elseif (e.type.toString()='Ressource')]
+[resourceNode(e, aURNdef,aGRLspec,actor)/]
+		[else]
+[softGoalNode(e, aURNdef,aGRLspec,actor)/]
+		[/if]
+	[/for]
+[/template]
+
+[template public featureNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+	feature [element.name/] {
+	[getConnection(element, aURNdef, aGRLspec,actor)/]
+}
+[/template]
+
+[template public goalNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+	goal [element.name/] {
+	[getConnection(element, aURNdef, aGRLspec,actor)/]
+}
+[/template]
+
+[template public taskNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+	task [element.name/] {
+	[getConnection(element, aURNdef, aGRLspec,actor)/]
+}
+[/template]
+
+[template public resourceNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+	resource [element.name/] {
+	[getConnection(element, aURNdef, aGRLspec,actor)/]
+}
+[/template]
+
+[template public softGoalNode(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+	softgoal [element.name/] {
+	[getConnection(element, aURNdef, aGRLspec,actor)/]
+}
+[/template]
+
+[template public getConnection(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+[beliefLink(element, aURNdef)/]
+[if (element.importanceQuantitative<>0)]
+importance [element.importanceQuantitative/]
+[/if][for (link : ElementLink | element.linksSrc)]
+			[if (not link.oclIsTypeOf(MandatoryFMLink)) and not link.oclIsTypeOf(OptionalFMLink)]
+				[if (link.oclIsTypeOf(Decomposition))]
+[decomposeGoal(link.dest.oclAsType(IntentionalElement),link,aURNdef, aGRLspec,actor)/]
+				[elseif (link.oclIsTypeOf(Contribution))]
+[contribute(link.dest.oclAsType(IntentionalElement),link,aURNdef, aGRLspec,actor)/]
+				[/if]
+			[/if]
+		[/for]
+[for (link : ElementLink | element.linksDest)]
+	[if (link.oclIsTypeOf(Dependency))][dependent(link.src.oclAsType(IntentionalElement),link,aURNdef,aGRLspec,actor)/]
+	[/if]
+	[/for]
+[/template]
+
+[template public decomposeGoal(element : IntentionalElement, link : ElementLink, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+	[if (element.decompositionType.toString()='Or')]or[elseif (element.decompositionType.toString()='Xor')]xor[else]and[/if] decomposes [getName(element,aURNdef,aGRLspec,actor)/]
+[/template]
+
+[template public contribute(element : IntentionalElement, link : ElementLink, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+	contributesTo [getName(element,aURNdef,aGRLspec,actor)/][if (link.eGet('correlation')->toString()='true')] correlated[/if] with [link.eGet('quantitativeContribution')/]
+[/template]
+
+[template public dependent(element : IntentionalElement, link : ElementLink, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+	dependsOn [getName(element,aURNdef,aGRLspec,actor)/]
+[/template]
+
+[template public beliefLink(element : IntentionalElement, aURNdef:URNdefinition) post (trim())]
+	[for (node : IURNNode | aURNdef.specDiagrams.nodes->select(i|i.oclIsTypeOf(Belief)))]
+		[for (con : IURNConnection | aURNdef.specDiagrams.connections->select(i|i.oclIsTypeOf(BeliefLink) and i.source=node))]
+			[if (element.refs->includes(con.target))]
+			[if (not node.eGet('description').toString().oclIsUndefined())]
+[node.eGet('description').toString()/]
+			[/if]
+			[/if]
+		[/for]
+	[/for]
+[/template]
+
+[template public getName(element : IntentionalElement, aURNdef : URNdefinition, aGRLspec : GRLspec, actor : Actor) post (trim())]
+	[for (r : IntentionalElementRef | element.refs)]
+		[for (actorRef : IURNContainerRef | (aURNdef.specDiagrams.contRefs->select(i|i.oclIsTypeOf(ActorRef)))->select(j|j.nodes->includes(r)))]
+[for (a : Actor | aGRLspec.actors->select(i|i.contRefs->includes(actorRef)))][if (actor<>a)][a.name/].[/if][element.name/][/for][/for][/for]
+[/template]
